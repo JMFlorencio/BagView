@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
+
+    <style>
+        :root { --accent: #00f2fe; --error: #ff4b2b; --glass: rgba(0, 0, 0, 0.85); }
+        body { margin: 0; overflow: hidden; background: #000; font-family: 'Segoe UI', Roboto, sans-serif; }
+
+        /* CAMERA FIX: Forces the video to fill the portrait screen */
+        video { width: 100vw !important; height: 100vh !important; object-fit: cover !important; position: fixed; top: 0; left: 0; z-index: -1; }
+
+        #ui-layer { position: fixed; inset: 0; z-index: 10; pointer-events: none; display: flex; flex-direction: column; justify-content: space-between; }
+        
+        .top-bar { padding: 20px; display: flex; justify-content: space-between; color: white; font-size: 12px; pointer-events: auto; }
+        .status-pill { background: var(--accent); color: black; padding: 5px 12px; border-radius: 20px; font-weight: bold; text-transform: uppercase; }
+
+        .upload-input { position: absolute; top: 70px; right: 20px; background: rgba(255,255,255,0.1); border: 1px solid var(--accent); color: white; padding: 8px 15px; border-radius: 8px; font-size: 10px; cursor: pointer; pointer-events: auto; }
+
+        /* RESTORED DIALOG BOX */
+        #search-dialog {
+            position: fixed; top: 45%; left: 50%; transform: translate(-50%, -50%);
+            background: var(--glass); backdrop-filter: blur(15px); border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 20px; padding: 25px 45px; color: white; text-align: center;
+            opacity: 0; visibility: hidden; transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); z-index: 1000;
+        }
+        #search-dialog.show { opacity: 1; visibility: visible; }
+        #search-dialog h2 { margin: 0; font-size: 14px; letter-spacing: 2px; color: var(--accent); text-transform: uppercase; }
+        #search-dialog p { margin: 8px 0 0; font-size: 16px; font-weight: 300; }
+
+        /* PORTRAIT VIEWPORT */
+        .scan-container { flex-grow: 1; display: flex; align-items: center; justify-content: center; }
+        .portrait-bracket { 
+            width: 280px; height: 450px; border: 2px solid rgba(255,255,255,0.2); 
+            border-radius: 30px; position: relative; box-shadow: 0 0 0 2000px rgba(0,0,0,0.6); 
+        }
+        .line { position: absolute; width: 100%; height: 2px; background: var(--accent); box-shadow: 0 0 15px var(--accent); animation: scan 2s infinite; }
+        @keyframes scan { 0%, 100% { top: 10%; } 50% { top: 90%; } }
+
+        /* IN-APP BROWSER */
+        #web-overlay { position: fixed; inset: 0; z-index: 2000; background: white; display: none; flex-direction: column; animation: slideUp 0.4s ease-out; }
+        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+        .web-header { background: #1a1a1a; padding: 15px; display: flex; justify-content: space-between; align-items: center; color: white; }
+        .close-btn { background: var(--accent); color: black; border: none; padding: 8px 20px; border-radius: 10px; font-weight: bold; cursor: pointer; }
+        #web-frame { flex-grow: 1; border: none; width: 100%; }
+
+        /* BOTTOM GALLERY */
+        .bottom-dock { background: linear-gradient(transparent, var(--glass)); padding: 20px 0 30px 0; pointer-events: auto; }
+        .scroll-wrapper { display: flex; gap: 15px; overflow-x: auto; padding: 0 20px; scrollbar-width: none; }
+        .place-card { min-width: 95px; height: 130px; background: #1a1a1a; border-radius: 15px; overflow: hidden; border: 2px solid transparent; flex-shrink: 0; transition: 0.3s; cursor: pointer; }
+        .place-card img { width: 100%; height: 75%; object-fit: cover; opacity: 0.7; }
+        .place-card .label { height: 25%; display: flex; align-items: center; justify-content: center; background: #000; color: #fff; font-size: 10px; font-weight: bold; }
+        .place-card.active { border-color: var(--accent); transform: scale(1.05); }
+
+        #splash { position: fixed; inset: 0; background: #000; z-index: 10000; display: flex; flex-direction: column; align-items: center; justify-content: center; color: white; text-align: center; }
+        .start-btn { background: var(--accent); color: black; border: none; padding: 18px 50px; border-radius: 50px; font-weight: bold; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+    <div id="splash">
+        <h1 style="letter-spacing: 5px; margin-bottom: 0;">BAG<span style="color:var(--accent)">VIEW</span></h1>
+        <p style="opacity: 0.7;">Virtual Magazine Traveler</p>
+        <button class="start-btn" id="go">START SCANNING</button>
+    </div>
+
+    <div id="web-overlay">
+        <div class="web-header">
+            <span id="web-title" style="font-weight: bold;">STATION INFO</span>
+            <button class="close-btn" onclick="closeBrowser()">CLOSE</button>
+        </div>
+        <iframe id="web-frame" src=""></iframe>
+    </div>
+
+    <div id="ui-layer">
+        <div class="top-bar">
+            <div style="letter-spacing: 1px;">MAGAZINE MODE</div>
+            <div class="status-pill" id="global-status">Scanning...</div>
+        </div>
+
+        <label class="upload-input">
+            UPLOAD IMAGE
+            <input type="file" id="file-uploader" hidden accept="image/*">
+        </label>
+
+        <div id="search-dialog">
+            <h2 id="modal-title">Instruction</h2>
+            <p id="modal-text">Start finding the target</p>
+        </div>
+
+        <div class="scan-container">
+            <div class="portrait-bracket"><div class="line"></div></div>
+        </div>
+
+        <div class="bottom-dock">
+            <div class="scroll-wrapper" id="placeGallery"></div>
+        </div>
+    </div>
+
+    <a-scene mindar-image="imageTargetSrc: ./targets.mind; autoStart: false;" embedded vr-mode-ui="enabled: false">
+        <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+        <a-entity id="ar-target-root"></a-entity>
+    </a-scene>
+
+    <script>
+        const stations = [
+            { id: 0, name: "Station 1", url: "https://google.com/search?q=Station1" },
+            { id: 1, name: "Station 2", url: "https://google.com/search?q=Station2" },
+            { id: 2, name: "Station 3", url: "https://google.com/search?q=Station3" },
+            { id: 3, name: "Station 4", url: "https://google.com/search?q=Station4" },
+            { id: 4, name: "Station 5", url: "https://google.com/search?q=Station5" },
+            { id: 5, name: "Station 6", url: "https://google.com/search?q=Station6" },
+            { id: 6, name: "Station 7", url: "https://facebook.com" },
+            { id: 7, name: "Station 8", url: "https://google.com/search?q=Station8" },
+            { id: 8, name: "Station 9", url: "https://google.com/search?q=Station9" },
+            { id: 9, name: "Station 10", url: "https://google.com/search?q=Station10" },
+            { id: 10, name: "Station 11", url: "https://google.com/search?q=Station11" }
+        ];
+
+        const gallery = document.getElementById('placeGallery');
+        const dialog = document.getElementById('search-dialog');
+        const arRoot = document.getElementById('ar-target-root');
+
+        // RESTORED UI INITIALIZATION WITH TAP INTERACTION
+        stations.forEach((station, i) => {
+            const card = document.createElement('div');
+            card.className = 'place-card';
+            card.id = `card-${i}`;
+            card.innerHTML = `<img src="https://picsum.photos/seed/${i+50}/200/300"><div class="label">STATION ${i+1}</div>`;
+            
+            // Interaction: Tap card to show instruction dialog
+            card.onclick = () => {
+                highlightCard(i);
+                showInstruction("Instruction", "Start finding the target");
+            };
+            gallery.appendChild(card);
+
+            const entity = document.createElement('a-entity');
+            entity.setAttribute('mindar-image-target', `targetIndex: ${i}`);
+            entity.addEventListener("targetFound", () => handleMatch(i));
+            arRoot.appendChild(entity);
+        });
+
+        function showInstruction(title, text) {
+            document.getElementById('modal-title').innerText = title;
+            document.getElementById('modal-text').innerText = text;
+            dialog.classList.add('show');
+            setTimeout(() => dialog.classList.remove('show'), 3500);
+        }
+
+        function highlightCard(index) {
+            document.querySelectorAll('.place-card').forEach(c => c.classList.remove('active'));
+            const activeCard = document.getElementById(`card-${index}`);
+            activeCard.classList.add('active');
+            activeCard.scrollIntoView({ behavior: 'smooth', inline: 'center' });
+        }
+
+        function handleMatch(index) {
+            highlightCard(index);
+            document.getElementById('global-status').innerText = "MATCH CONFIRMED";
+            
+            setTimeout(() => {
+                const overlay = document.getElementById('web-overlay');
+                document.getElementById('web-frame').src = stations[index].url;
+                document.getElementById('web-title').innerText = stations[index].name.toUpperCase();
+                overlay.style.display = 'flex';
+            }, 1000);
+        }
+
+        function closeBrowser() {
+            document.getElementById('web-overlay').style.display = 'none';
+            document.getElementById('web-frame').src = "";
+            document.getElementById('global-status').innerText = "Scanning...";
+        }
+
+        document.getElementById('file-uploader').onchange = (e) => {
+            const file = e.target.files[0];
+            if(!file) return;
+            const name = file.name.toLowerCase();
+            let match = -1;
+            if(name.includes("11")) match = 10;
+            else if(name.includes("10")) match = 9;
+            else {
+                for(let i=1; i<=9; i++) { if(name.includes(i.toString())) { match = i-1; break; } }
+            }
+            if(match !== -1) handleMatch(match);
+        };
+
+        document.getElementById('go').onclick = () => {
+            document.getElementById('splash').style.display = 'none';
+            document.querySelector('a-scene').systems['mindar-image-system'].start();
+        };
+    </script>
+</body>
+</html>
