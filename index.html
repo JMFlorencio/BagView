@@ -262,7 +262,7 @@
 
     <div id="shutter"></div>
 
-    <a-scene id="ar-scene" mindar-image="imageTargetSrc: targets.mind; autoStart: false; uiLoading: no; uiScanning: no;" embedded renderer="transparent: true; alpha: true;" vr-mode-ui="enabled: false">
+    <a-scene id="ar-scene" mindar-image="imageTargetSrc: targets.mind; autoStart: false; uiLoading: no; uiScanning: no; filterMinCF:0.0001; filterBeta: 0.001;" embedded renderer="transparent: true; alpha: true;" vr-mode-ui="enabled: false">
         <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
         <a-entity id="target-container"></a-entity>
     </a-scene>
@@ -326,26 +326,19 @@
         setTimeout(() => { if(!statusText.innerText.includes("MATCH")) updateStatusUI('scanning'); }, 2000);
     }
 
-    // UPDATED: Improved Camera Switch Logic
     async function switchCamera() {
         const sceneEl = document.querySelector('a-scene');
         const arSystem = sceneEl.systems['mindar-image-system'];
-        
-        // Only allow switching if scanner is actually running
         if(!document.getElementById('cam-toggle').classList.contains('active')) return;
 
-        // Visual feedback (Flash effect)
         document.getElementById('shutter').style.zIndex = "3000";
         document.getElementById('shutter').style.opacity = '1';
         
         try {
-            // MindAR built-in switch
             await arSystem.switchCamera();
         } catch (err) {
             console.error("Camera switch failed:", err);
-            alert("Could not switch camera. Make sure you have multiple cameras available.");
         } finally {
-            // Hide flash after small delay
             setTimeout(() => { 
                 document.getElementById('shutter').style.opacity = '0';
                 setTimeout(() => { document.getElementById('shutter').style.zIndex = "-1"; }, 800);
@@ -360,7 +353,6 @@
         
         if(!btn.classList.contains('active')) {
             try {
-                // Ensure scene is ready
                 await sceneEl.systems['mindar-image-system'].start();
                 
                 document.body.style.backgroundColor = "transparent";
@@ -372,7 +364,6 @@
                 camIcon.setAttribute('fill', '#fff');
             } catch (err) { 
                 console.error("Scanner start error:", err);
-                alert("Camera access is required for AR features."); 
             }
         } else { 
             stopCamera(); 
@@ -392,7 +383,7 @@
         updateStatusUI('standby');
         camIcon.setAttribute('fill', '#999');
         document.body.style.backgroundColor = "#fff";
-        document.getElementById('shutter').style.zIndex = '2500'; // Bring to front to hide scene
+        document.getElementById('shutter').style.zIndex = '2500';
         document.getElementById('shutter').style.opacity = '1';
     }
 
@@ -412,6 +403,19 @@
         document.getElementById('tutorial-page').classList.add('hidden');
         document.getElementById('ui-layer').classList.remove('hidden');
         buildUI();
+
+        // FIX: Inject required AR anchors for detection
+        const container = document.getElementById('target-container');
+        stations.forEach((_, index) => {
+            const entity = document.createElement('a-entity');
+            entity.setAttribute('mindar-image-target', `targetIndex: ${index}`);
+            // Optional: add a tiny transparent plane so MindAR tracks correctly
+            const plane = document.createElement('a-plane');
+            plane.setAttribute('opacity', '0');
+            entity.appendChild(plane);
+            container.appendChild(entity);
+        });
+
         toggleScanner();
 
         const sceneEl = document.querySelector('a-scene');
