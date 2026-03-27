@@ -268,7 +268,7 @@
     </a-scene>
 
 <script>
-  const stations = [
+    const stations = [
         { name: "Map", thumb: "Assets/A1_Map.jpg", link: "https://jmflorencio.github.io/BagView_Botanical_Map/" },
         { name: "Main Entrance", thumb: "Assets/A2_Main Entrance.png", link: "https://jmflorencio.github.io/BagView_Botanical_Map/" },
         { name: "Arbor", thumb: "Assets/Arbor.png", link: "https://tour.panoee.net/69b7b676cd5918466513b640" },
@@ -290,13 +290,28 @@
     const hud = document.getElementById('gallery-hud');
     const trigger = document.getElementById('dock-trigger');
 
-    // UI Logic
     trigger.addEventListener('click', () => hud.classList.toggle('expanded'));
-    
+    document.getElementById('ar-scene').addEventListener('mousedown', () => hud.classList.remove('expanded'));
+
+    let startY = 0;
+    trigger.addEventListener('touchstart', (e) => startY = e.touches[0].clientY);
+    trigger.addEventListener('touchend', (e) => {
+        let endY = e.changedTouches[0].clientY;
+        if (startY > endY + 20) hud.classList.add('expanded');
+        if (startY < endY - 20) hud.classList.remove('expanded');
+    });
+
+    const carousel = document.getElementById('hero-carousel');
+    const dots = document.querySelectorAll('.dot');
+    carousel.addEventListener('scroll', () => {
+        const index = Math.round(carousel.scrollLeft / carousel.offsetWidth);
+        dots.forEach((dot, i) => dot.classList.toggle('active', i === index));
+    });
+
     function buildUI() {
         const root = document.getElementById('gallery-root');
         root.innerHTML = stations.map((s, i) => `
-            <div class="station-card" id="card-${i}" onclick="window.open('${s.link}', '_blank')">
+            <div class="station-card" id="card-${i}" onclick="reactToManualClick(${i})">
                 <div style="height:70%; background:#eee; overflow:hidden;">
                     <img src="${s.thumb}" style="width:100%; height:100%; object-fit:cover;" onerror="this.src='https://via.placeholder.com/150?text=No+Image'">
                 </div>
@@ -305,111 +320,140 @@
         `).join('');
     }
 
-    // AR Scanner Controls
+    function reactToManualClick(index) {
+        const statusText = document.getElementById('gps-status');
+        statusText.innerText = "TARGETING: " + stations[index].name.toUpperCase();
+        setTimeout(() => { if(!statusText.innerText.includes("MATCH")) updateStatusUI('scanning'); }, 2000);
+    }
+
+    async function switchCamera() {
+        const sceneEl = document.querySelector('a-scene');
+        const arSystem = sceneEl.systems['mindar-image-system'];
+        if(!document.getElementById('cam-toggle').classList.contains('active')) return;
+
+        document.getElementById('shutter').style.zIndex = "3000";
+        document.getElementById('shutter').style.opacity = '1';
+        
+        try {
+            await arSystem.switchCamera();
+        } catch (err) {
+            console.error("Camera switch failed:", err);
+        } finally {
+            setTimeout(() => { 
+                document.getElementById('shutter').style.opacity = '0';
+                setTimeout(() => { document.getElementById('shutter').style.zIndex = "-1"; }, 800);
+            }, 300);
+        }
+    }
+
     async function toggleScanner() {
         const btn = document.getElementById('cam-toggle');
         const sceneEl = document.querySelector('a-scene');
         const camIcon = document.getElementById('cam-icon');
-        const shutter = document.getElementById('shutter');
         
         if(!btn.classList.contains('active')) {
             try {
                 await sceneEl.systems['mindar-image-system'].start();
-                shutter.style.opacity = '0';
-                shutter.style.zIndex = '-1';
+                
+                document.body.style.backgroundColor = "transparent";
+                document.getElementById('shutter').style.opacity = '0'; 
+                document.getElementById('shutter').style.zIndex = '-1';
+                
                 btn.classList.add('active');
                 updateStatusUI('scanning');
-                camIcon.setAttribute('fill', 'var(--accent)');
-            } catch (err) {
-                console.error("Scanner failed:", err);
+                camIcon.setAttribute('fill', '#fff');
+            } catch (err) { 
+                console.error("Scanner start error:", err);
             }
-        } else {
-            stopCamera();
+        } else { 
+            stopCamera(); 
         }
     }
 
     function stopCamera() {
         const sceneEl = document.querySelector('a-scene');
         const btn = document.getElementById('cam-toggle');
-        const shutter = document.getElementById('shutter');
-        if(sceneEl.systems['mindar-image-system']) sceneEl.systems['mindar-image-system'].stop();
+        const camIcon = document.getElementById('cam-icon');
+        
+        if(sceneEl.systems['mindar-image-system']) {
+            sceneEl.systems['mindar-image-system'].stop();
+        }
+        
         btn.classList.remove('active');
         updateStatusUI('standby');
-        shutter.style.zIndex = '2500';
-        shutter.style.opacity = '1';
-    }
-
-    function finishTutorial() {
-        document.getElementById('tutorial-page').classList.add('hidden');
-        document.getElementById('ui-layer').classList.remove('hidden');
-        buildUI();
-        setupARAnchors(); // Initialize anchors immediately
-        toggleScanner();
-    }
-
-    function setupARAnchors() {
-        const container = document.getElementById('target-container');
-        container.innerHTML = ''; // Clear existing
-
-        stations.forEach((station, index) => {
-            const entity = document.createElement('a-entity');
-            entity.setAttribute('mindar-image-target', `targetIndex: ${index}`);
-            
-            // Explicitly add a tracking plane
-            const plane = document.createElement('a-plane');
-            plane.setAttribute('geometry', 'primitive: plane; width: 1; height: 1');
-            plane.setAttribute('material', 'transparent: true; opacity: 0');
-            entity.appendChild(plane);
-
-            // Attach listeners directly to the entity
-            entity.addEventListener("targetFound", () => {
-                updateStatusUI('match');
-                const sound = document.getElementById('match-sound');
-                if(sound) { sound.currentTime = 0; sound.play(); }
-
-                const card = document.getElementById(`card-${index}`);
-                if(card) {
-                    card.classList.add('found-glow');
-                    card.scrollIntoView({ behavior: 'smooth', inline: 'center' });
-                    hud.classList.add('expanded');
-                }
-
-                setTimeout(() => {
-                    window.open(station.link, '_blank');
-                    setTimeout(() => card?.classList.remove('found-glow'), 3000);
-                }, 1500);
-            });
-
-            entity.addEventListener("targetLost", () => {
-                updateStatusUI('scanning');
-            });
-
-            container.appendChild(entity);
-        });
-    }
-
-    function updateStatusUI(type) {
-        const pulse = document.getElementById('status-pulse');
-        const text = document.getElementById('gps-status');
-        if(!pulse || !text) return;
-        
-        pulse.className = 'pulse';
-        if (type === 'scanning') { pulse.classList.add('live'); text.innerText = "SCANNING..."; }
-        else if (type === 'match') { pulse.classList.add('match'); text.innerText = "MATCH FOUND!"; }
-        else { text.innerText = "STANDBY"; }
-    }
-
-    // Helper functions for navigation
-    function goToTutorial() {
-        document.getElementById('home-page').classList.add('hidden');
-        document.getElementById('tutorial-page').classList.remove('hidden');
-        document.getElementById('tut-video').play();
+        camIcon.setAttribute('fill', '#999');
+        document.body.style.backgroundColor = "#fff";
+        document.getElementById('shutter').style.zIndex = '2500';
+        document.getElementById('shutter').style.opacity = '1';
     }
 
     function goBackToHome() {
         stopCamera();
         document.getElementById('ui-layer').classList.add('hidden');
         document.getElementById('home-page').classList.remove('hidden');
+    }
+
+    function goToTutorial() {
+        document.getElementById('home-page').classList.add('hidden');
+        document.getElementById('tutorial-page').classList.remove('hidden');
+        document.getElementById('tut-video').play();
+    }
+
+    function finishTutorial() {
+        document.getElementById('tutorial-page').classList.add('hidden');
+        document.getElementById('ui-layer').classList.remove('hidden');
+        buildUI();
+
+        // FIX: Inject required AR anchors for detection
+        const container = document.getElementById('target-container');
+        stations.forEach((_, index) => {
+            const entity = document.createElement('a-entity');
+            entity.setAttribute('mindar-image-target', `targetIndex: ${index}`);
+            // Optional: add a tiny transparent plane so MindAR tracks correctly
+            const plane = document.createElement('a-plane');
+            plane.setAttribute('opacity', '0');
+            entity.appendChild(plane);
+            container.appendChild(entity);
+        });
+
+        toggleScanner();
+
+        const sceneEl = document.querySelector('a-scene');
+        sceneEl.addEventListener("targetFound", (event) => {
+            const targetIndex = event.detail.index;
+            const matchedStation = stations[targetIndex];
+            const card = document.getElementById(`card-${targetIndex}`);
+
+            if (matchedStation) {
+                updateStatusUI('match');
+                const sound = document.getElementById('match-sound');
+                if(sound) sound.play();
+
+                if(card) {
+                    card.classList.add('found-glow');
+                    card.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+                }
+
+                setTimeout(() => {
+                    window.open(matchedStation.link, '_blank');
+                    if(card) setTimeout(() => card.classList.remove('found-glow'), 3000);
+                }, 1200);
+            }
+        });
+
+        sceneEl.addEventListener("targetLost", () => {
+            updateStatusUI('scanning');
+        });
+    }
+
+    function updateStatusUI(type) {
+        const statusPulse = document.getElementById('status-pulse');
+        const statusText = document.getElementById('gps-status');
+        if(!statusPulse || !statusText) return;
+        statusPulse.className = 'pulse';
+        if (type === 'scanning') { statusPulse.classList.add('live'); statusText.innerText = "SCANNING..."; }
+        else if (type === 'match') { statusPulse.classList.add('match'); statusText.innerText = "MATCH FOUND!"; }
+        else { statusText.innerText = "CAMERA: STANDBY"; }
     }
 </script>
 </body>
