@@ -34,7 +34,7 @@
         a-scene { background: none !important; background-color: transparent !important; }
         .a-canvas { background: transparent !important; }
 
-        /* --- WELCOME PAGE --- */
+        /* --- PAGES & UTILS --- */
         .overlay-screen { 
             position: fixed; inset: 0; z-index: 2000; 
             background: var(--bg-page); display: flex; 
@@ -42,6 +42,8 @@
             justify-content: center; text-align: center; 
             transition: 0.8s ease; 
         }
+
+        .hidden { display: none !important; opacity: 0; pointer-events: none; }
         
         .main-card {
             width: 92%; height: 94%; background: white;
@@ -110,7 +112,6 @@
 
         /* --- UI LAYER --- */
         #ui-layer { position: fixed; inset: 0; z-index: 100; pointer-events: none; transition: 0.5s; }
-        .hidden { opacity: 0; pointer-events: none; visibility: hidden; }
         .top-nav { position: absolute; top: 0; left: 0; right: 0; padding: 30px 20px; display: flex; justify-content: space-between; align-items: center; }
         .back-btn-ui { width: 45px; height: 45px; background: var(--glass); backdrop-filter: var(--blur); border-radius: 12px; display: flex; align-items: center; justify-content: center; cursor: pointer; pointer-events: auto; }
         .gps-display { background: var(--glass); backdrop-filter: var(--blur); padding: 10px 18px; border-radius: 12px; display: flex; align-items: center; gap: 10px; }
@@ -125,7 +126,6 @@
             transition: 0.5s cubic-bezier(0.4, 0, 0.2, 1); 
             background: rgba(255, 255, 255, 0); 
             border-radius: 30px 30px 0 0;
-            box-shadow: none;
         }
         .bottom-dock.expanded { 
             transform: translateY(0); 
@@ -141,7 +141,6 @@
             width: 50px; height: 5px; 
             background: rgba(0, 0, 0, 0.3); 
             border-radius: 10px; transition: 0.3s; 
-            box-shadow: 0 0 8px rgba(255, 255, 255, 0.6);
         }
         .scroll-container { 
             display: flex; gap: 12px; overflow-x: auto; 
@@ -156,14 +155,12 @@
         .station-card { 
             min-width: 110px; height: 140px; background: #f9f9f9; 
             border-radius: 16px; overflow: hidden; border: 1px solid #eee; 
-            flex-shrink: 0; transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
+            flex-shrink: 0; transition: 0.3s;
         }
-        .station-card:active { transform: scale(0.9); border-color: var(--accent); }
         .found-glow { 
             transform: scale(1.1) translateY(-10px); 
             border: 3px solid var(--accent) !important; 
             box-shadow: 0 10px 20px rgba(0, 166, 153, 0.3); 
-            z-index: 10;
         }
 
         .nav-bar { 
@@ -177,7 +174,7 @@
         .cam-btn { width: 75px; height: 75px; border-radius: 50%; background: #ffffff; border: 4px solid #eee; display: flex; align-items: center; justify-content: center; cursor: pointer; pointer-events: auto; }
         .cam-btn.active { border-color: var(--accent); background: var(--accent); }
 
-        #shutter { position: fixed; inset: 0; z-index: -1; background: #ffffff; transition: 0.8s; pointer-events: none; }
+        #shutter { position: fixed; inset: 0; z-index: -1; background: #ffffff; transition: 0.8s; pointer-events: none; opacity: 0; }
         @keyframes pulse-scanning { 0% { transform: scale(1); opacity: 1; } 100% { transform: scale(2.5); opacity: 0; } }
         @keyframes pulse-match { from { transform: scale(1); } to { transform: scale(1.3); } }
     </style>
@@ -268,152 +265,194 @@
     </a-scene>
 
 <script>
-const stations = [
-    { name: "Map", thumb: "Assets/A1_Map.jpg", link: "https://jmflorencio.github.io/BagView_Botanical_Map/" },
-    { name: "Main Entrance", thumb: "Assets/A2_Main Entrance.png", link: "https://jmflorencio.github.io/BagView_Botanical_Map/" },
-    { name: "Arbor", thumb: "Assets/Arbor.png", link: "https://tour.panoee.net/69b7b676cd5918466513b640" },
-    { name: "Cactus & Succulents", thumb: "Assets/Cactus&Succulents.png", link: "https://tour.panoee.net/69b7b991cd59184ead13b71f" },
-    { name: "Centennial Garden", thumb: "Assets/Centennial Garden.png", link: "https://tour.panoee.net/69b7b991cd59184ead13b71f" },
-    { name: "Chinese Garden", thumb: "Assets/Chinese%20Garden.png", link: "https://tour.panoee.net/69b74a8ccd5918bff013a943" },
-    { name: "Dahlia Garden", thumb: "Assets/Dahlia Garden.png", link: "https://tour.panoee.net/69b74a8ccd5918bff013a943" },
-    { name: "Friendship Garden", thumb: "Assets/City%20of%20Vaughan%20Friendship%20Garden.png", link: "https://tour.panoee.net/69b7b820a3e4d78d0cc8db9e" },
-    { name: "Cordillera Village", thumb: "Assets/Cordillera%20Village.png", link: "https://tour.panoee.net/69b7b964a3e4d75529c8dc1a" },
-    { name: "Greenhouse", thumb: "Assets/Greenhouse.png", link: "https://tour.panoee.net/69b7b91fa3e4d7ebe6c8dbfe" },
-    { name: "Japanese Garden", thumb: "Assets/Japanese%20Garden.png", link: "https://tour.panoee.net/69b7b63aa3e4d733edc8db51" },
-    { name: "Japanese Tunnel", thumb: "Assets/Japanese%20Tunnel.png", link: "https://tour.panoee.net/69b7b616a3e4d72922c8db49" },
-    { name: "Korea Garden", thumb: "Assets/Korea%20Garden.png", link: "https://tour.panoee.net/koreagarden/1" },
-    { name: "Orchidarium", thumb: "Assets/Orchidarium.png", link: "https://tour.panoee.net/orchidarium/1" },
-    { name: "Philippine-Thailand Friendship Garden", thumb: "Assets/Philippine-Thailand Frienship Garden.png", link: "https://tour.panoee.net/69b184dfa0e1d16f1a9e388d/69b187aba0e1d18afb9e38fb" },
-    { name: "PMSEA Garden", thumb: "Assets/PMSEA%20Garden.png", link: "https://tour.panoee.net/69b7b586a3e4d741fdc8db26" }
-];
+    const stations = [
+        { name: "Map", thumb: "Assets/A1_Map.jpg", link: "https://jmflorencio.github.io/BagView_Botanical_Map/" },
+        { name: "Main Entrance", thumb: "Assets/A2_Main Entrance.png", link: "https://jmflorencio.github.io/BagView_Botanical_Map/" },
+        { name: "Arbor", thumb: "Assets/Arbor.png", link: "https://tour.panoee.net/69b7b676cd5918466513b640" },
+        { name: "Cactus & Succulents", thumb: "Assets/Cactus&Succulents.png", link: "https://tour.panoee.net/69b7b991cd59184ead13b71f" },
+        { name: "Centennial Garden", thumb: "Assets/Centennial Garden.png", link: "https://tour.panoee.net/69b7b991cd59184ead13b71f" },
+        { name: "Chinese Garden", thumb: "Assets/Chinese%20Garden.png", link: "https://tour.panoee.net/69b74a8ccd5918bff013a943" },
+        { name: "Dahlia Garden", thumb: "Assets/Dahlia Garden.png", link: "https://tour.panoee.net/69b74a8ccd5918bff013a943" },
+        { name: "Friendship Garden", thumb: "Assets/City%20of%20Vaughan%20Friendship%20Garden.png", link: "https://tour.panoee.net/69b7b820a3e4d78d0cc8db9e" },
+        { name: "Cordillera Village", thumb: "Assets/Cordillera%20Village.png", link: "https://tour.panoee.net/69b7b964a3e4d75529c8dc1a" },
+        { name: "Greenhouse", thumb: "Assets/Greenhouse.png", link: "https://tour.panoee.net/69b7b91fa3e4d7ebe6c8dbfe" },
+        { name: "Japanese Garden", thumb: "Assets/Japanese%20Garden.png", link: "https://tour.panoee.net/69b7b63aa3e4d733edc8db51" },
+        { name: "Japanese Tunnel", thumb: "Assets/Japanese%20Tunnel.png", link: "https://tour.panoee.net/69b7b616a3e4d72922c8db49" },
+        { name: "Korea Garden", thumb: "Assets/Korea%20Garden.png", link: "https://tour.panoee.net/koreagarden/1" },
+        { name: "Orchidarium", thumb: "Assets/Orchidarium.png", link: "https://tour.panoee.net/orchidarium/1" },
+        { name: "Philippine-Thailand Friendship Garden", thumb: "Assets/Philippine-Thailand Frienship Garden.png", link: "https://tour.panoee.net/69b184dfa0e1d16f1a9e388d/69b187aba0e1d18afb9e38fb" },
+        { name: "PMSEA Garden", thumb: "Assets/PMSEA%20Garden.png", link: "https://tour.panoee.net/69b7b586a3e4d741fdc8db26" }
+    ];
 
-const sceneEl = document.querySelector('a-scene');
+    const hud = document.getElementById('gallery-hud');
+    const trigger = document.getElementById('dock-trigger');
 
-// 1. Initialize UI and AR Entities on Load
-window.addEventListener('load', () => {
-    buildUI();
-    const container = document.getElementById('target-container');
-    stations.forEach((_, index) => {
-        const entity = document.createElement('a-entity');
-        entity.setAttribute('mindar-image-target', `targetIndex: ${index}`);
-        const plane = document.createElement('a-plane');
-        plane.setAttribute('position', '0 0 0');
-        plane.setAttribute('height', '1');
-        plane.setAttribute('width', '1');
-        plane.setAttribute('material', 'opacity: 0; transparent: true');
-        entity.appendChild(plane);
-        container.appendChild(entity);
+    trigger.addEventListener('click', () => hud.classList.toggle('expanded'));
+    document.getElementById('ar-scene').addEventListener('mousedown', () => hud.classList.remove('expanded'));
+
+    let startY = 0;
+    trigger.addEventListener('touchstart', (e) => startY = e.touches[0].clientY);
+    trigger.addEventListener('touchend', (e) => {
+        let endY = e.changedTouches[0].clientY;
+        if (startY > endY + 20) hud.classList.add('expanded');
+        if (startY < endY - 20) hud.classList.remove('expanded');
     });
-});
 
-function buildUI() {
-    const root = document.getElementById('gallery-root');
-    root.innerHTML = stations.map((s, i) => `
-        <div class="station-card" id="card-${i}">
-            <div style="height:70%; background:#eee; overflow:hidden;">
-                <img src="${s.thumb}" style="width:100%; height:100%; object-fit:cover;" onerror="this.src='https://via.placeholder.com/150?text=No+Image'">
+    const carousel = document.getElementById('hero-carousel');
+    const dots = document.querySelectorAll('.dot');
+    carousel.addEventListener('scroll', () => {
+        const index = Math.round(carousel.scrollLeft / carousel.offsetWidth);
+        dots.forEach((dot, i) => dot.classList.toggle('active', i === index));
+    });
+
+    function buildUI() {
+        const root = document.getElementById('gallery-root');
+        root.innerHTML = stations.map((s, i) => `
+            <div class="station-card" id="card-${i}" onclick="reactToManualClick(${i})">
+                <div style="height:70%; background:#eee; overflow:hidden;">
+                    <img src="${s.thumb}" style="width:100%; height:100%; object-fit:cover;" onerror="this.src='https://via.placeholder.com/150?text=No+Image'">
+                </div>
+                <div style="font-size:9px; text-align:center; padding:10px 5px; font-weight:bold; color:#444;">${s.name.toUpperCase()}</div>
             </div>
-            <div style="font-size:9px; text-align:center; padding:10px 5px; font-weight:bold; color:#444;">${s.name.toUpperCase()}</div>
-        </div>
-    `).join('');
-}
-
-// 2. Navigation Functions
-function goToTutorial() {
-    document.getElementById('home-page').classList.add('hidden');
-    document.getElementById('tutorial-page').classList.remove('hidden');
-    document.getElementById('tut-video').play();
-}
-
-async function finishTutorial() {
-    document.getElementById('tutorial-page').classList.add('hidden');
-    document.getElementById('ui-layer').classList.remove('hidden');
-    setupARListeners();
-    await toggleScanner();
-}
-
-function goBackToHome() {
-    stopCamera();
-    document.getElementById('ui-layer').classList.add('hidden');
-    document.getElementById('home-page').classList.remove('hidden');
-}
-
-// 3. AR Logic
-function setupARListeners() {
-    sceneEl.addEventListener("targetFound", (event) => {
-        const targetIndex = event.detail.index;
-        const matchedStation = stations[targetIndex];
-        const card = document.getElementById(`card-${targetIndex}`);
-
-        if (matchedStation) {
-            updateStatusUI('match');
-            const sound = document.getElementById('match-sound');
-            if(sound) sound.play();
-
-            if(card) {
-                card.classList.add('found-glow');
-                card.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
-            }
-
-            setTimeout(() => {
-                window.open(matchedStation.link, '_blank');
-                if(card) setTimeout(() => card.classList.remove('found-glow'), 3000);
-            }, 1200);
-        }
-    });
-
-    sceneEl.addEventListener("targetLost", () => updateStatusUI('scanning'));
-}
-
-async function toggleScanner() {
-    const btn = document.getElementById('cam-toggle');
-    const camIcon = document.getElementById('cam-icon');
-    const arSystem = sceneEl.systems['mindar-image-system'];
-
-    if(!btn.classList.contains('active')) {
-        try {
-            await arSystem.start();
-            document.body.style.backgroundColor = "transparent";
-            document.getElementById('shutter').style.opacity = '0'; 
-            document.getElementById('shutter').style.zIndex = '-1';
-            btn.classList.add('active');
-            updateStatusUI('scanning');
-            camIcon.setAttribute('fill', '#fff');
-        } catch (err) { console.error("Scanner error:", err); }
-    } else { 
-        stopCamera(); 
+        `).join('');
     }
-}
 
-function stopCamera() {
-    const arSystem = sceneEl.systems['mindar-image-system'];
-    const btn = document.getElementById('cam-toggle');
-    const camIcon = document.getElementById('cam-icon');
-    
-    if(arSystem) arSystem.stop();
-    
-    btn.classList.remove('active');
-    updateStatusUI('standby');
-    camIcon.setAttribute('fill', '#999');
-    document.body.style.backgroundColor = "#fff";
-    document.getElementById('shutter').style.zIndex = '2500';
-    document.getElementById('shutter').style.opacity = '1';
-}
+    function reactToManualClick(index) {
+        const statusText = document.getElementById('gps-status');
+        statusText.innerText = "TARGETING: " + stations[index].name.toUpperCase();
+        setTimeout(() => { if(!statusText.innerText.includes("MATCH")) updateStatusUI('scanning'); }, 2000);
+    }
 
-function updateStatusUI(type) {
-    const statusPulse = document.getElementById('status-pulse');
-    const statusText = document.getElementById('gps-status');
-    if(!statusPulse || !statusText) return;
-    statusPulse.className = 'pulse';
-    if (type === 'scanning') { statusPulse.classList.add('live'); statusText.innerText = "SCANNING..."; }
-    else if (type === 'match') { statusPulse.classList.add('match'); statusText.innerText = "MATCH FOUND!"; }
-    else { statusText.innerText = "CAMERA: STANDBY"; }
-}
+    async function switchCamera() {
+        const sceneEl = document.querySelector('a-scene');
+        const arSystem = sceneEl.systems['mindar-image-system'];
+        if(!document.getElementById('cam-toggle').classList.contains('active')) return;
 
-// 4. UI HUD interaction
-document.getElementById('dock-trigger').addEventListener('click', () => {
-    document.getElementById('gallery-hud').classList.toggle('expanded');
-});
+        const shutter = document.getElementById('shutter');
+        shutter.style.zIndex = "3000";
+        shutter.style.opacity = '1';
+        
+        try {
+            await arSystem.switchCamera();
+        } catch (err) {
+            console.error("Camera switch failed:", err);
+        } finally {
+            setTimeout(() => { 
+                shutter.style.opacity = '0';
+                setTimeout(() => { shutter.style.zIndex = "-1"; }, 800);
+            }, 300);
+        }
+    }
+
+    async function toggleScanner() {
+        const btn = document.getElementById('cam-toggle');
+        const sceneEl = document.querySelector('a-scene');
+        const camIcon = document.getElementById('cam-icon');
+        const shutter = document.getElementById('shutter');
+        
+        if(!btn.classList.contains('active')) {
+            try {
+                await sceneEl.systems['mindar-image-system'].start();
+                document.body.style.backgroundColor = "transparent";
+                shutter.style.opacity = '0'; 
+                shutter.style.zIndex = '-1';
+                btn.classList.add('active');
+                updateStatusUI('scanning');
+                camIcon.setAttribute('fill', '#fff');
+            } catch (err) { 
+                console.error("Scanner start error:", err);
+            }
+        } else { 
+            stopCamera(); 
+        }
+    }
+
+    function stopCamera() {
+        const sceneEl = document.querySelector('a-scene');
+        const btn = document.getElementById('cam-toggle');
+        const camIcon = document.getElementById('cam-icon');
+        const shutter = document.getElementById('shutter');
+        
+        if(sceneEl.systems['mindar-image-system']) {
+            sceneEl.systems['mindar-image-system'].stop();
+        }
+        
+        btn.classList.remove('active');
+        updateStatusUI('standby');
+        camIcon.setAttribute('fill', '#999');
+        document.body.style.backgroundColor = "#fff";
+
+        // FIX: Ensure shutter is hidden so it doesn't block the UI
+        shutter.style.opacity = '0';
+        shutter.style.zIndex = '-1';
+    }
+
+    function goBackToHome() {
+        stopCamera();
+        document.getElementById('ui-layer').classList.add('hidden');
+        document.getElementById('home-page').classList.remove('hidden');
+    }
+
+    function goToTutorial() {
+        document.getElementById('home-page').classList.add('hidden');
+        document.getElementById('tutorial-page').classList.remove('hidden');
+        document.getElementById('tut-video').play();
+    }
+
+    function finishTutorial() {
+        document.getElementById('tutorial-page').classList.add('hidden');
+        document.getElementById('ui-layer').classList.remove('hidden');
+        buildUI();
+
+        const container = document.getElementById('target-container');
+        stations.forEach((_, index) => {
+            const entity = document.createElement('a-entity');
+            entity.setAttribute('mindar-image-target', `targetIndex: ${index}`);
+            const plane = document.createElement('a-plane');
+            plane.setAttribute('opacity', '0');
+            entity.appendChild(plane);
+            container.appendChild(entity);
+        });
+
+        toggleScanner();
+
+        const sceneEl = document.querySelector('a-scene');
+        sceneEl.addEventListener("targetFound", (event) => {
+            const targetIndex = event.detail.index;
+            const matchedStation = stations[targetIndex];
+            const card = document.getElementById(`card-${targetIndex}`);
+
+            if (matchedStation) {
+                updateStatusUI('match');
+                const sound = document.getElementById('match-sound');
+                if(sound) sound.play();
+
+                if(card) {
+                    card.classList.add('found-glow');
+                    card.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+                }
+
+                setTimeout(() => {
+                    window.open(matchedStation.link, '_blank');
+                    if(card) setTimeout(() => card.classList.remove('found-glow'), 3000);
+                }, 1200);
+            }
+        });
+
+        sceneEl.addEventListener("targetLost", () => {
+            updateStatusUI('scanning');
+        });
+    }
+
+    function updateStatusUI(type) {
+        const statusPulse = document.getElementById('status-pulse');
+        const statusText = document.getElementById('gps-status');
+        if(!statusPulse || !statusText) return;
+        statusPulse.className = 'pulse';
+        if (type === 'scanning') { statusPulse.classList.add('live'); statusText.innerText = "SCANNING..."; }
+        else if (type === 'match') { statusPulse.classList.add('match'); statusText.innerText = "MATCH FOUND!"; }
+        else { statusText.innerText = "CAMERA: STANDBY"; }
+    }
 </script>
 </body>
 </html>
