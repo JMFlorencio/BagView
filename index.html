@@ -9,10 +9,18 @@
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
 
     <style>
-        :root { --accent: #00ff88; --scanning: #ffaa00; --error: #ff4444; --glass: rgba(0, 0, 0, 0.75); --blur: blur(20px); }
+        :root { 
+            --accent: #00A699; 
+            --scanning: #00A699; 
+            --glass: rgba(255, 255, 255, 0.9); 
+            --blur: blur(20px); 
+            --bg-page: #F2F5F7;
+            --text-main: #333333;
+        }
+        
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         
-        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: #000; font-family: 'Segoe UI', sans-serif; color: white; }
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: #ffffff; font-family: 'Segoe UI', sans-serif; color: var(--text-main); }
 
         video { 
             position: fixed !important; 
@@ -26,68 +34,130 @@
         a-scene { background: none !important; background-color: transparent !important; }
         .a-canvas { background: transparent !important; }
 
-        #ui-layer { position: fixed; inset: 0; z-index: 100; pointer-events: none; transition: 0.5s; background: transparent !important; }
-        .top-nav, .bottom-area, .icon-btn, .cam-btn, .station-card, #inquiry-panel, .drag-handle { pointer-events: auto; }
+        /* --- WELCOME PAGE (FIVERR STYLE) --- */
+        .overlay-screen { 
+            position: fixed; inset: 0; z-index: 2000; 
+            background: var(--bg-page); display: flex; 
+            flex-direction: column; align-items: center; 
+            justify-content: center; text-align: center; 
+            transition: 0.8s ease; 
+        }
+        
+        .main-card {
+            width: 92%; height: 94%; background: white;
+            border-radius: 35px; overflow: hidden;
+            display: flex; flex-direction: column;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.05);
+        }
 
-        .overlay-screen { position: fixed; inset: 0; z-index: 2000; background: #000; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; transition: 0.8s ease; }
+        /* Carousel Container */
+        .hero-container { position: relative; width: 100%; height: 60%; overflow: hidden; background: #eee; }
+        
+        .hero-scroll-wrapper {
+            display: flex;
+            width: 100%;
+            height: 100%;
+            overflow-x: auto;
+            scroll-snap-type: x mandatory;
+            scrollbar-width: none;
+        }
+        .hero-scroll-wrapper::-webkit-scrollbar { display: none; }
+
+        .hero-slide {
+            min-width: 100%;
+            height: 100%;
+            position: relative;
+            scroll-snap-align: start;
+        }
+
+        .hero-img { width: 100%; height: 100%; background-size: cover; background-position: center; }
+
+        /* Info Overlays */
+        .hero-info-overlay {
+            position: absolute;
+            bottom: 60px;
+            left: 25px;
+            right: 25px;
+            text-align: left;
+            color: white;
+            z-index: 5;
+        }
+        .hero-info-overlay h2 { margin: 8px 0; font-size: 24px; font-weight: 800; text-shadow: 0 2px 10px rgba(0,0,0,0.3); }
+        .hero-info-overlay p { margin: 0; font-size: 14px; opacity: 0.9; text-shadow: 0 2px 5px rgba(0,0,0,0.3); }
+        
+        .badge {
+            background: var(--accent);
+            color: white;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 10px;
+            font-weight: 800;
+            text-transform: uppercase;
+        }
+
+        .hero-brush {
+            position: absolute; bottom: -2px; left: 0; width: 100%; height: 100px;
+            background: white; z-index: 2;
+            -webkit-mask-image: linear-gradient(to bottom, transparent, black 70%);
+            mask-image: linear-gradient(to bottom, transparent, black 70%);
+        }
+
+        /* Pagination Dots */
+        .scroll-dots {
+            position: absolute;
+            bottom: 25px;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            z-index: 10;
+        }
+        .dot { width: 6px; height: 6px; background: rgba(0,0,0,0.15); border-radius: 50%; transition: 0.3s; }
+        .dot.active { width: 20px; background: var(--accent); border-radius: 10px; }
+
+        .hero-text-area { flex: 1; padding: 20px 30px; display: flex; flex-direction: column; align-items: center; justify-content: space-between; }
+        .hero-title { font-size: 22px; font-weight: 900; color: #111; line-height: 1.2; margin-top: 10px; }
+        
+        .get-started-btn {
+            width: 100%; max-width: 280px; height: 60px;
+            background: var(--accent); color: white;
+            border: none; border-radius: 50px;
+            font-size: 17px; font-weight: bold;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; position: relative; padding-right: 45px;
+            margin-bottom: 10px;
+        }
+        .btn-arrow-circle {
+            position: absolute; right: 8px; width: 44px; height: 44px;
+            background: white; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .btn-arrow-circle svg { fill: var(--accent); width: 20px; }
+
+        /* --- UI LAYER --- */
+        #ui-layer { position: fixed; inset: 0; z-index: 100; pointer-events: none; transition: 0.5s; }
         .hidden { opacity: 0; pointer-events: none; visibility: hidden; }
-        
-        .video-container { width: 90%; max-width: 600px; aspect-ratio: 16/9; border-radius: 20px; overflow: hidden; border: 1px solid var(--accent); position: relative; background: #050505; }
-        video.tut-vid { width: 100%; height: 100%; object-fit: cover; position: relative !important; z-index: 1 !important; }
-        .skip-fab { margin-top: 25px; background: rgba(255,255,255,0.05); padding: 12px 35px; border-radius: 50px; cursor: pointer; border: 1px solid rgba(255,255,255,0.2); font-size: 10px; letter-spacing: 2px; font-weight: 900; }
-
-        .top-nav { position: absolute; top: 0; left: 0; right: 0; padding: 30px 20px; display: flex; justify-content: space-between; align-items: flex-start; }
-        .gps-display { background: var(--glass); backdrop-filter: var(--blur); padding: 10px 18px; border-radius: 12px; border-left: 3px solid #444; display: flex; align-items: center; gap: 10px; transition: 0.3s; min-width: 160px; }
-        
-        .gps-display.status-live { border-left-color: var(--scanning); }
-        .gps-display.status-match { border-left-color: var(--accent); }
-
-        .pulse { width: 8px; height: 8px; background: #444; border-radius: 50%; transition: 0.3s; } 
+        .top-nav { position: absolute; top: 0; left: 0; right: 0; padding: 30px 20px; display: flex; justify-content: space-between; align-items: center; }
+        .back-btn-ui { width: 45px; height: 45px; background: var(--glass); backdrop-filter: var(--blur); border-radius: 12px; display: flex; align-items: center; justify-content: center; cursor: pointer; pointer-events: auto; }
+        .gps-display { background: var(--glass); backdrop-filter: var(--blur); padding: 10px 18px; border-radius: 12px; display: flex; align-items: center; gap: 10px; }
+        .pulse { width: 8px; height: 8px; background: #bbb; border-radius: 50%; } 
         .pulse.live { background: var(--scanning); animation: pulse-scanning 1.5s infinite; }
         .pulse.match { background: var(--accent); animation: pulse-match 0.5s infinite alternate; }
 
-        #inquiry-panel { position: fixed; inset: 0; z-index: 5500; background: rgba(0,0,0,0.95); backdrop-filter: blur(15px); display: none; padding: 40px 20px; flex-direction: column; overflow-y: auto; }
-        .inquiry-card { background: rgba(255,255,255,0.05); padding: 20px; border-radius: 15px; margin-bottom: 15px; border-left: 2px solid var(--accent); }
-
-        .bottom-area { position: absolute; bottom: 0; left: 0; right: 0; }
-        
-        .bottom-dock { 
-            position: absolute;
-            bottom: 0;
-            width: 100vw;
-            background: linear-gradient(to top, rgba(0,0,0,0.95) 80%, transparent); 
-            transition: transform 0.6s cubic-bezier(0.19, 1, 0.22, 1);
-            transform: translateY(calc(100% - 45px));
-            z-index: 120;
-            padding-bottom: 120px;
-        }
-        .bottom-dock.expanded { transform: translateY(0); }
-        
-        .drag-handle { width: 100%; height: 45px; display: flex; justify-content: center; align-items: center; cursor: grab; }
-        .handle-bar { width: 45px; height: 5px; background: rgba(255,255,255,0.3); border-radius: 10px; }
-
-        .scroll-container { 
-            display: flex; 
-            gap: 12px; 
-            overflow-x: auto; 
-            padding: 10px 20px 20px 20px; 
-            scrollbar-width: none; 
-            scroll-behavior: smooth; 
-            width: 100%;
-        }
-        .scroll-container::-webkit-scrollbar { display: none; }
-        
-        .station-card { min-width: 100px; height: 130px; background: #111; border-radius: 16px; overflow: hidden; border: 1px solid rgba(255,255,255,0.1); flex-shrink: 0; transition: 0.4s; cursor: pointer; }
-        .station-card.react { transform: translateY(-10px); border-color: var(--accent); }
+        .bottom-dock { position: absolute; bottom: 0; width: 100vw; transform: translateY(calc(100% - 60px)); z-index: 120; padding-bottom: 120px; transition: 0.5s; }
+        .bottom-dock.expanded { transform: translateY(0); background: white; }
+        .drag-handle { width: 100%; height: 60px; display: flex; justify-content: center; align-items: center; cursor: grab; pointer-events: auto; }
+        .handle-bar { width: 50px; height: 5px; background: rgba(0,0,0,0.1); border-radius: 10px; }
+        .scroll-container { display: flex; gap: 12px; overflow-x: auto; padding: 10px 20px 20px 20px; width: 100%; pointer-events: auto; }
+        .station-card { min-width: 110px; height: 140px; background: #f9f9f9; border-radius: 16px; overflow: hidden; border: 1px solid #eee; flex-shrink: 0; }
 
         .nav-bar { position: absolute; bottom: 40px; left: 0; right: 0; display: flex; justify-content: center; align-items: center; gap: 25px; z-index: 150; }
-        .icon-btn { width: 50px; height: 50px; border-radius: 50%; background: var(--glass); backdrop-filter: var(--blur); border: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; cursor: pointer; }
-        .cam-btn { width: 75px; height: 75px; border-radius: 50%; background: #000; border: 3px solid #333; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.3s; }
+        .icon-btn { width: 50px; height: 50px; border-radius: 50%; background: white; border: 1px solid #eee; display: flex; align-items: center; justify-content: center; cursor: pointer; pointer-events: auto; transition: 0.2s; }
+        .icon-btn:active { transform: scale(0.9); }
+        .cam-btn { width: 75px; height: 75px; border-radius: 50%; background: #ffffff; border: 4px solid #eee; display: flex; align-items: center; justify-content: center; cursor: pointer; pointer-events: auto; }
         .cam-btn.active { border-color: var(--accent); background: var(--accent); }
 
-        #webview-container { position: fixed; inset: 0; z-index: 3000; background: #000; display: none; flex-direction: column; }
-        #shutter { position: fixed; inset: 0; z-index: -1; background: #000; transition: 0.8s; pointer-events: none; }
-        
+        #shutter { position: fixed; inset: 0; z-index: -1; background: #ffffff; transition: 0.8s; pointer-events: none; }
         @keyframes pulse-scanning { 0% { transform: scale(1); opacity: 1; } 100% { transform: scale(2.5); opacity: 0; } }
         @keyframes pulse-match { from { transform: scale(1); } to { transform: scale(1.3); } }
     </style>
@@ -96,52 +166,89 @@
 
     <audio id="match-sound" src="https://cdn.pixabay.com/audio/2021/08/04/audio_bb630cc098.mp3" preload="auto"></audio>
 
-    <div id="inquiry-panel">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:30px;">
-            <h2 style="letter-spacing:5px; margin:0; font-weight: 900;">INFO & HELP</h2>
-            <div onclick="toggleInquiry()" style="cursor:pointer; background:rgba(255,255,255,0.1); border-radius:50%; width:40px; height:40px; display:flex; align-items:center; justify-content:center;">✕</div>
-        </div>
-        <div class="inquiry-card">
-            <h4 style="color:var(--accent); margin:0 0 10px 0;">HOW TO USE</h4>
-            <p style="font-size:12px; opacity:0.8; line-height:1.6;">Point your camera at the physical markers. When a match is found, info will pop up!</p>
-        </div>
-    </div>
-
-    <div id="webview-container">
-        <div style="background:#111; padding:15px; display:flex; justify-content:space-between; align-items:center; border-bottom: 1px solid #333;">
-            <span id="web-title" style="color:var(--accent); font-weight:900;">STATION INFO</span>
-            <button onclick="closeWebView()" style="background:none; border: 1px solid #444; color:white; padding: 5px 15px; border-radius: 20px;">CLOSE</button>
-        </div>
-        <iframe id="web-frame" src="" style="width:100%; height:100%; border:none;"></iframe>
-    </div>
-
     <div id="home-page" class="overlay-screen">
-        <h1 style="font-size:48px; margin:0; letter-spacing:8px; font-weight:900;">BAG<span style="color:var(--accent)">VIEW</span></h1>
-        <p style="color:#555; letter-spacing:5px; font-size:10px;">ENVIRONMENTAL AR GUIDE</p>
-        <button onclick="goToTutorial()" style="background:var(--accent); border:none; padding:18px 60px; border-radius:50px; font-weight:900; margin-top:100px; cursor:pointer;">EXPLORE</button>
+        <div class="main-card">
+            <div class="hero-container">
+                <div class="hero-scroll-wrapper" id="hero-carousel">
+                    <div class="hero-slide">
+                        <div class="hero-img" style="background-image: url('Assets/A2_Main Entrance.png');"></div>
+                        <div class="hero-info-overlay">
+                            <span class="badge">Featured</span>
+                            <h2>Botanical Garden</h2>
+                            <p>Step into Baguio's vibrant floral heart.</p>
+                        </div>
+                    </div>
+                    <div class="hero-slide">
+                        <div class="hero-img" style="background-image: url('Assets/A1_Map.jpg');"></div>
+                        <div class="hero-info-overlay">
+                            <span class="badge">Interactive</span>
+                            <h2>AR Navigation</h2>
+                            <p>Unlock stories using your camera lens.</p>
+                        </div>
+                    </div>
+                    <div class="hero-slide">
+                        <div class="hero-img" style="background-image: url('Assets/A2_Main Entrance.png');"></div>
+                        <div class="hero-info-overlay">
+                            <span class="badge">Eco-Tourism</span>
+                            <h2>Save the World</h2>
+                            <p>Experience nature, leave only footprints.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="scroll-dots">
+                    <div class="dot active"></div>
+                    <div class="dot"></div>
+                    <div class="dot"></div>
+                </div>
+                <div class="hero-brush"></div> 
+            </div>
+
+            <div class="hero-text-area">
+                <h1 class="hero-title">Let’s Enjoy The<br>Beautiful World!</h1>
+                <button class="get-started-btn" onclick="goToTutorial()">
+                    Get Started
+                    <div class="btn-arrow-circle">
+                        <svg viewBox="0 0 24 24"><path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"/></svg>
+                    </div>
+                </button>
+            </div>
+        </div>
     </div>
 
     <div id="tutorial-page" class="overlay-screen hidden">
-        <div class="video-container"><video id="tut-video" class="tut-vid" playsinline><source src="Assets/tutorial.mp4" type="video/mp4"></video></div>
-        <div class="skip-fab" onclick="finishTutorial()">SKIP TUTORIAL ➔</div>
+        <div style="width:85%; max-width:320px; height:480px; background:#f0f0f0; border-radius:24px; overflow:hidden;">
+            <video id="tut-video" style="width:100%; height:100%; object-fit:cover;" playsinline muted loop>
+                <source src="Assets/tutorial.mp4" type="video/mp4">
+            </video>
+        </div>
+        <div style="margin-top:30px; padding:16px 40px; background:var(--accent); color:white; border-radius:50px; font-weight:800; cursor:pointer;" onclick="finishTutorial()">CONTINUE ➔</div>
     </div>
 
     <div id="ui-layer" class="hidden">
         <div class="top-nav">
+            <div class="back-btn-ui" onclick="goBackToHome()">
+                <svg viewBox="0 0 24 24" width="24" fill="var(--accent)"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+            </div>
             <div class="gps-display" id="status-container">
                 <div class="pulse" id="status-pulse"></div>
-                <div id="gps-status" style="font-size:11px; font-weight:900; letter-spacing:1px;">CAMERA: STANDBY</div>
+                <div id="gps-status" style="font-size:11px; font-weight:900; color:#666;">SCANNING...</div>
             </div>
         </div>
+
         <div class="bottom-area">
             <div class="bottom-dock" id="gallery-hud">
-                <div class="drag-handle" id="drag-zone"><div class="handle-bar"></div></div>
+                <div class="drag-handle"><div class="handle-bar"></div></div>
                 <div class="scroll-container" id="gallery-root"></div>
             </div>
             <div class="nav-bar">
-                <div class="icon-btn" onclick="toggleInquiry()"><svg viewBox="0 0 24 24" width="22" fill="#fff"><path d="M21 6h-2v9H6v2c0 .55.45 1 1 1h11l4 4V7c0-.55-.45-1-1-1zm-4 6V3c0-.55-.45-1-1-1H3c-.55 0-1 .45-1 1v14l4-4h10c.55 0 1-.45 1-1z"/></svg></div>
-                <div class="cam-btn" id="cam-toggle" onclick="toggleScanner()"><svg viewBox="0 0 24 24" width="32" fill="white" id="cam-icon"><path d="M12 9c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3zm7-4h-2.69l-1.83-2H9.52l-1.83 2H5c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm-7 15c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5z"/></svg></div>
-                <div class="icon-btn" onclick="location.reload()"><svg viewBox="0 0 24 24" width="22" fill="#fff"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg></div>
+                <div class="icon-btn"><svg viewBox="0 0 24 24" width="22" fill="#666"><path d="M21 6h-2v9H6v2c0 .55.45 1 1 1h11l4 4V7c0-.55-.45-1-1-1zm-4 6V3c0-.55-.45-1-1-1H3c-.55 0-1 .45-1 1v14l4-4h10c.55 0 1-.45 1-1z"/></svg></div>
+                <div class="cam-btn" id="cam-toggle" onclick="toggleScanner()"><svg viewBox="0 0 24 24" width="32" fill="#999" id="cam-icon"><path d="M12 9c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3zm7-4h-2.69l-1.83-2H9.52l-1.83 2H5c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm-7 15c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5z"/></svg></div>
+                <div class="icon-btn" id="flip-btn" onclick="switchCamera()">
+                    <svg viewBox="0 0 24 24" width="24" fill="#666">
+                        <path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z"/>
+                    </svg>
+                </div>
             </div>
         </div>
     </div>
@@ -155,168 +262,99 @@
 
     <script>
         const stations = [
-            { name: "Map", thumb: "Assets/A1_Map.jpg", link: "https://jmflorencio.github.io/BagView_Botanical_Map/" },
-			{ name: "Main Entrance", thumb: "Assets/A2_Main Entrance.png", link: "https://jmflorencio.github.io/BagView_Botanical_Map/" },
-            { name: "Arbor", thumb: "Assets/Arbor.png", link: "https://tour.panoee.net/69b7b676cd5918466513b640" },
-            { name: "Cactus & Succulents", thumb: "Assets/Cactus&Succulents.png", link: "https://tour.panoee.net/69b7b991cd59184ead13b71f" },
-			{ name: "Centennial Garden", thumb: "Assets/Centennial Garden.png", link: "https://tour.panoee.net/69b7b991cd59184ead13b71f" },
-            { name: "Chinese Garden", thumb: "Assets/Chinese%20Garden.png", link: "https://tour.panoee.net/69b74a8ccd5918bff013a943" },
-			{ name: "Dahlia Garden", thumb: "Assets/Dahlia Garden.png", link: "https://tour.panoee.net/69b74a8ccd5918bff013a943" },
-            { name: "Friendship Garden", thumb: "Assets/City%20of%20Vaughan%20Friendship%20Garden.png", link: "https://tour.panoee.net/69b7b820a3e4d78d0cc8db9e" },
-            { name: "Cordillera Village", thumb: "Assets/Cordillera%20Village.png", link: "https://tour.panoee.net/69b7b964a3e4d75529c8dc1a" },
-            { name: "Greenhouse", thumb: "Assets/Greenhouse.png", link: "https://tour.panoee.net/69b7b91fa3e4d7ebe6c8dbfe" },
-            { name: "Japanese Garden", thumb: "Assets/Japanese%20Garden.png", link: "https://tour.panoee.net/69b7b63aa3e4d733edc8db51" },
-            { name: "Japanese Tunnel", thumb: "Assets/Japanese%20Tunnel.png", link: "https://tour.panoee.net/69b7b616a3e4d72922c8db49" },
-            { name: "Korea Garden", thumb: "Assets/Korea%20Garden.png", link: "https://tour.panoee.net/koreagarden/1" },
-            { name: "Orchidarium", thumb: "Assets/Orchidarium.png", link: "https://tour.panoee.net/orchidarium/1" },
-			{ name: "Philippine-Thailand Frienship Garden", thumb: "Assets/Philippine-Thailand Frienship Garden.png", link: "https://tour.panoee.net/69b184dfa0e1d16f1a9e388d/69b187aba0e1d18afb9e38fb" },
-            { name: "PMSEA Garden", thumb: "Assets/PMSEA%20Garden.png", link: "https://tour.panoee.net/69b7b586a3e4d741fdc8db26" }
+            { name: "Map", thumb: "Assets/A1_Map.jpg" },
+            { name: "Main Entrance", thumb: "Assets/A2_Main Entrance.png" }
         ];
+
+        // Carousel Dot Sync Logic
+        const carousel = document.getElementById('hero-carousel');
+        const dots = document.querySelectorAll('.dot');
+
+        carousel.addEventListener('scroll', () => {
+            const index = Math.round(carousel.scrollLeft / carousel.offsetWidth);
+            dots.forEach((dot, i) => dot.classList.toggle('active', i === index));
+        });
 
         function buildUI() {
             const root = document.getElementById('gallery-root');
             root.innerHTML = stations.map((s, i) => `
-                <div class="station-card" id="card-${i}" onclick="handleCardTap(${i})">
-                    <div style="height:75%; background:#1a1a1a; overflow:hidden;">
-                        <img src="${s.thumb}" style="width:100%; height:100%; object-fit:cover;" onerror="this.style.display='none'">
+                <div class="station-card" id="card-${i}">
+                    <div style="height:70%; background:#eee; overflow:hidden;">
+                        <img src="${s.thumb}" style="width:100%; height:100%; object-fit:cover;">
                     </div>
-                    <div style="font-size:8px; text-align:center; padding:8px 4px; font-weight:bold; color:#fff; text-transform:uppercase;">${s.name}</div>
+                    <div style="font-size:9px; text-align:center; padding:10px 5px; font-weight:bold; color:#444;">${s.name}</div>
                 </div>
             `).join('');
         }
 
-        let touchStartY = 0;
-        const hud = document.getElementById('gallery-hud');
-        const dragZone = document.getElementById('drag-zone');
-
-        dragZone.addEventListener('touchstart', (e) => touchStartY = e.touches[0].clientY, { passive: true });
-        dragZone.addEventListener('touchend', (e) => {
-            let diff = touchStartY - e.changedTouches[0].clientY;
-            if (diff > 30) hud.classList.add('expanded');
-            else if (diff < -30) hud.classList.remove('expanded');
-        });
-        dragZone.addEventListener('click', () => hud.classList.toggle('expanded'));
-
-        function updateStatusUI(type) {
-            const statusBox = document.getElementById('status-container');
-            const statusPulse = document.getElementById('status-pulse');
-            const statusText = document.getElementById('gps-status');
-            statusBox.classList.remove('status-live', 'status-match');
-            statusPulse.classList.remove('live', 'match');
-
-            if (type === 'standby') {
-                statusText.innerText = "CAMERA: STANDBY";
-                statusText.style.color = "#fff";
-            } else if (type === 'scanning') {
-                statusBox.classList.add('status-live');
-                statusPulse.classList.add('live');
-                statusText.innerText = "SCANNING...";
-                statusText.style.color = "var(--scanning)";
-            } else if (type === 'match') {
-                statusBox.classList.add('status-match');
-                statusPulse.classList.add('match');
-                statusText.innerText = "MATCH FOUND!";
-                statusText.style.color = "var(--accent)";
-            }
-        }
-
-        function handleCardTap(index) {
-            const card = document.getElementById(`card-${index}`);
-            const scrollContainer = document.querySelector('.scroll-container');
-            if (!card || !scrollContainer) return;
-            document.querySelectorAll('.station-card').forEach(c => c.classList.remove('react'));
-            card.classList.add('react');
-            const scrollToPosition = card.offsetLeft - (scrollContainer.offsetWidth / 2) + (card.offsetWidth / 2);
-            scrollContainer.scrollTo({ left: scrollToPosition, behavior: 'smooth' });
-        }
-
-        function setupTracking() {
-            const container = document.getElementById('target-container');
-            container.innerHTML = "";
-            stations.forEach((s, i) => {
-                const entity = document.createElement('a-entity');
-                entity.setAttribute('mindar-image-target', `targetIndex: ${i}`);
-                
-                entity.addEventListener("targetFound", () => {
-                    if ("vibrate" in navigator) { navigator.vibrate([100, 50, 100]); }
-                    const sound = document.getElementById('match-sound');
-                    sound.currentTime = 0;
-                    sound.play();
-
-                    updateStatusUI('match');
-                    hud.classList.add('expanded'); 
-                    handleCardTap(i); 
-
-                    if (s.link && s.link !== "") {
-                        openStation(i); 
-                    }
-                });
-
-                entity.addEventListener("targetLost", () => {
-                    updateStatusUI('scanning');
-                });
-
-                container.appendChild(entity);
-            });
+        async function switchCamera() {
+            const sceneEl = document.querySelector('a-scene');
+            const arSystem = sceneEl.systems['mindar-image-system'];
+            const flipBtn = document.getElementById('flip-btn');
+            if(!document.getElementById('cam-toggle').classList.contains('active')) return;
+            flipBtn.style.transition = "0.4s ease";
+            flipBtn.style.transform = flipBtn.style.transform === "rotate(180deg)" ? "rotate(0deg)" : "rotate(180deg)";
+            const shutter = document.getElementById('shutter');
+            shutter.style.transition = '0.05s';
+            shutter.style.opacity = '1';
+            try { await arSystem.switchCamera(); } catch (err) { console.error(err); }
+            setTimeout(() => { shutter.style.transition = '0.4s'; shutter.style.opacity = '0'; }, 100);
         }
 
         async function toggleScanner() {
             const btn = document.getElementById('cam-toggle');
             const sceneEl = document.querySelector('a-scene');
             const camIcon = document.getElementById('cam-icon');
-            
             if(!btn.classList.contains('active')) {
                 try {
                     await sceneEl.systems['mindar-image-system'].start();
                     document.body.style.backgroundColor = "transparent";
-                    document.getElementById('shutter').style.display = 'none'; 
+                    document.getElementById('shutter').style.opacity = '0'; 
                     btn.classList.add('active');
                     updateStatusUI('scanning');
-                    camIcon.setAttribute('fill', '#000');
-                } catch (err) { alert("Camera blocked."); }
-            } else {
-                sceneEl.systems['mindar-image-system'].stop();
-                btn.classList.remove('active');
-                updateStatusUI('standby');
-                camIcon.setAttribute('fill', '#fff');
-                document.body.style.backgroundColor = "#000";
-                document.getElementById('shutter').style.display = 'block';
-            }
+                    camIcon.setAttribute('fill', '#fff');
+                } catch (err) { alert("Camera error"); }
+            } else { stopCamera(); }
         }
 
-        function toggleInquiry() {
-            const panel = document.getElementById('inquiry-panel');
-            panel.style.display = (panel.style.display === 'flex') ? 'none' : 'flex';
+        function stopCamera() {
+            const sceneEl = document.querySelector('a-scene');
+            const btn = document.getElementById('cam-toggle');
+            const camIcon = document.getElementById('cam-icon');
+            sceneEl.systems['mindar-image-system'].stop();
+            btn.classList.remove('active');
+            updateStatusUI('standby');
+            camIcon.setAttribute('fill', '#999');
+            document.body.style.backgroundColor = "#fff";
+            document.getElementById('shutter').style.opacity = '1';
+        }
+
+        function goBackToHome() {
+            stopCamera();
+            document.getElementById('ui-layer').classList.add('hidden');
+            document.getElementById('home-page').classList.remove('hidden');
         }
 
         function goToTutorial() {
-            const sound = document.getElementById('match-sound');
-            sound.play().then(() => { sound.pause(); sound.currentTime = 0; }).catch(e => {});
-
             document.getElementById('home-page').classList.add('hidden');
             document.getElementById('tutorial-page').classList.remove('hidden');
             document.getElementById('tut-video').play();
         }
 
         function finishTutorial() {
-            document.getElementById('tut-video').pause();
             document.getElementById('tutorial-page').classList.add('hidden');
             document.getElementById('ui-layer').classList.remove('hidden');
             buildUI();
-            setupTracking();
-            updateStatusUI('standby');
+            toggleScanner();
         }
 
-        function openStation(index) {
-            const s = stations[index];
-            document.getElementById('web-frame').src = s.link;
-            document.getElementById('web-title').innerText = s.name.toUpperCase() + " INFO";
-            document.getElementById('webview-container').style.display = 'flex';
-        }
-
-        function closeWebView() { 
-            document.getElementById('webview-container').style.display = 'none'; 
-            document.getElementById('web-frame').src = ''; 
+        function updateStatusUI(type) {
+            const statusPulse = document.getElementById('status-pulse');
+            const statusText = document.getElementById('gps-status');
+            statusPulse.className = 'pulse';
+            if (type === 'scanning') { statusPulse.classList.add('live'); statusText.innerText = "SCANNING..."; }
+            else if (type === 'match') { statusPulse.classList.add('match'); statusText.innerText = "MATCH FOUND!"; }
+            else { statusText.innerText = "CAMERA: STANDBY"; }
         }
     </script>
 </body>
