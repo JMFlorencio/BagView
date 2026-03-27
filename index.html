@@ -268,7 +268,7 @@
     </a-scene>
 
 <script>
-  const stations = [
+const stations = [
     { name: "Map", thumb: "Assets/A1_Map.jpg", link: "https://jmflorencio.github.io/BagView_Botanical_Map/" },
     { name: "Main Entrance", thumb: "Assets/A2_Main Entrance.png", link: "https://jmflorencio.github.io/BagView_Botanical_Map/" },
     { name: "Arbor", thumb: "Assets/Arbor.png", link: "https://tour.panoee.net/69b7b676cd5918466513b640" },
@@ -289,10 +289,9 @@
 
 const sceneEl = document.querySelector('a-scene');
 
-// Initialize the UI on Load
+// 1. Initialize UI and AR Entities on Load
 window.addEventListener('load', () => {
     buildUI();
-    // Pre-inject targets so MindAR sees them immediately
     const container = document.getElementById('target-container');
     stations.forEach((_, index) => {
         const entity = document.createElement('a-entity');
@@ -310,7 +309,7 @@ window.addEventListener('load', () => {
 function buildUI() {
     const root = document.getElementById('gallery-root');
     root.innerHTML = stations.map((s, i) => `
-        <div class="station-card" id="card-${i}" onclick="reactToManualClick(${i})">
+        <div class="station-card" id="card-${i}">
             <div style="height:70%; background:#eee; overflow:hidden;">
                 <img src="${s.thumb}" style="width:100%; height:100%; object-fit:cover;" onerror="this.src='https://via.placeholder.com/150?text=No+Image'">
             </div>
@@ -319,46 +318,28 @@ function buildUI() {
     `).join('');
 }
 
-async function toggleScanner() {
-    const btn = document.getElementById('cam-toggle');
-    const camIcon = document.getElementById('cam-icon');
-    const arSystem = sceneEl.systems['mindar-image-system'];
-
-    if(!btn.classList.contains('active')) {
-        try {
-            await arSystem.start();
-            document.body.style.backgroundColor = "transparent";
-            document.getElementById('shutter').style.opacity = '0'; 
-            document.getElementById('shutter').style.zIndex = '-1';
-            btn.classList.add('active');
-            updateStatusUI('scanning');
-            camIcon.setAttribute('fill', '#fff');
-        } catch (err) { console.error("Scanner start error:", err); }
-    } else { 
-        stopCamera(); 
-    }
+// 2. Navigation Functions
+function goToTutorial() {
+    document.getElementById('home-page').classList.add('hidden');
+    document.getElementById('tutorial-page').classList.remove('hidden');
+    document.getElementById('tut-video').play();
 }
 
-function stopCamera() {
-    const arSystem = sceneEl.systems['mindar-image-system'];
-    const btn = document.getElementById('cam-toggle');
-    const camIcon = document.getElementById('cam-icon');
-    
-    if(arSystem) arSystem.stop();
-    
-    btn.classList.remove('active');
-    updateStatusUI('standby');
-    camIcon.setAttribute('fill', '#999');
-    document.body.style.backgroundColor = "#fff";
-    document.getElementById('shutter').style.zIndex = '2500';
-    document.getElementById('shutter').style.opacity = '1';
-}
-
-function finishTutorial() {
+async function finishTutorial() {
     document.getElementById('tutorial-page').classList.add('hidden');
     document.getElementById('ui-layer').classList.remove('hidden');
-    
-    // Set up listeners once
+    setupARListeners();
+    await toggleScanner();
+}
+
+function goBackToHome() {
+    stopCamera();
+    document.getElementById('ui-layer').classList.add('hidden');
+    document.getElementById('home-page').classList.remove('hidden');
+}
+
+// 3. AR Logic
+function setupARListeners() {
     sceneEl.addEventListener("targetFound", (event) => {
         const targetIndex = event.detail.index;
         const matchedStation = stations[targetIndex];
@@ -382,63 +363,57 @@ function finishTutorial() {
     });
 
     sceneEl.addEventListener("targetLost", () => updateStatusUI('scanning'));
-
-    toggleScanner();
 }
 
-// Keep your existing carousel, HUD, and Navigation functions...
+async function toggleScanner() {
+    const btn = document.getElementById('cam-toggle');
+    const camIcon = document.getElementById('cam-icon');
+    const arSystem = sceneEl.systems['mindar-image-system'];
 
-        // FIX: Inject required AR anchors for detection
-        const container = document.getElementById('target-container');
-        stations.forEach((_, index) => {
-            const entity = document.createElement('a-entity');
-            entity.setAttribute('mindar-image-target', `targetIndex: ${index}`);
-            // Optional: add a tiny transparent plane so MindAR tracks correctly
-            const plane = document.createElement('a-plane');
-            plane.setAttribute('opacity', '0');
-            entity.appendChild(plane);
-            container.appendChild(entity);
-        });
-
-        toggleScanner();
-
-        const sceneEl = document.querySelector('a-scene');
-        sceneEl.addEventListener("targetFound", (event) => {
-            const targetIndex = event.detail.index;
-            const matchedStation = stations[targetIndex];
-            const card = document.getElementById(`card-${targetIndex}`);
-
-            if (matchedStation) {
-                updateStatusUI('match');
-                const sound = document.getElementById('match-sound');
-                if(sound) sound.play();
-
-                if(card) {
-                    card.classList.add('found-glow');
-                    card.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
-                }
-
-                setTimeout(() => {
-                    window.open(matchedStation.link, '_blank');
-                    if(card) setTimeout(() => card.classList.remove('found-glow'), 3000);
-                }, 1200);
-            }
-        });
-
-        sceneEl.addEventListener("targetLost", () => {
+    if(!btn.classList.contains('active')) {
+        try {
+            await arSystem.start();
+            document.body.style.backgroundColor = "transparent";
+            document.getElementById('shutter').style.opacity = '0'; 
+            document.getElementById('shutter').style.zIndex = '-1';
+            btn.classList.add('active');
             updateStatusUI('scanning');
-        });
+            camIcon.setAttribute('fill', '#fff');
+        } catch (err) { console.error("Scanner error:", err); }
+    } else { 
+        stopCamera(); 
     }
+}
 
-    function updateStatusUI(type) {
-        const statusPulse = document.getElementById('status-pulse');
-        const statusText = document.getElementById('gps-status');
-        if(!statusPulse || !statusText) return;
-        statusPulse.className = 'pulse';
-        if (type === 'scanning') { statusPulse.classList.add('live'); statusText.innerText = "SCANNING..."; }
-        else if (type === 'match') { statusPulse.classList.add('match'); statusText.innerText = "MATCH FOUND!"; }
-        else { statusText.innerText = "CAMERA: STANDBY"; }
-    }
+function stopCamera() {
+    const arSystem = sceneEl.systems['mindar-image-system'];
+    const btn = document.getElementById('cam-toggle');
+    const camIcon = document.getElementById('cam-icon');
+    
+    if(arSystem) arSystem.stop();
+    
+    btn.classList.remove('active');
+    updateStatusUI('standby');
+    camIcon.setAttribute('fill', '#999');
+    document.body.style.backgroundColor = "#fff";
+    document.getElementById('shutter').style.zIndex = '2500';
+    document.getElementById('shutter').style.opacity = '1';
+}
+
+function updateStatusUI(type) {
+    const statusPulse = document.getElementById('status-pulse');
+    const statusText = document.getElementById('gps-status');
+    if(!statusPulse || !statusText) return;
+    statusPulse.className = 'pulse';
+    if (type === 'scanning') { statusPulse.classList.add('live'); statusText.innerText = "SCANNING..."; }
+    else if (type === 'match') { statusPulse.classList.add('match'); statusText.innerText = "MATCH FOUND!"; }
+    else { statusText.innerText = "CAMERA: STANDBY"; }
+}
+
+// 4. UI HUD interaction
+document.getElementById('dock-trigger').addEventListener('click', () => {
+    document.getElementById('gallery-hud').classList.toggle('expanded');
+});
 </script>
 </body>
 </html>
