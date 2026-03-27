@@ -346,18 +346,20 @@
         }
     }
 
-    async function toggleScanner() {
+   async function toggleScanner() {
         const btn = document.getElementById('cam-toggle');
         const sceneEl = document.querySelector('a-scene');
         const camIcon = document.getElementById('cam-icon');
+        const shutter = document.getElementById('shutter');
         
         if(!btn.classList.contains('active')) {
             try {
                 await sceneEl.systems['mindar-image-system'].start();
                 
+                // Make the world transparent to see the camera
                 document.body.style.backgroundColor = "transparent";
-                document.getElementById('shutter').style.opacity = '0'; 
-                document.getElementById('shutter').style.zIndex = '-1';
+                shutter.style.opacity = '0'; 
+                shutter.style.zIndex = '-1'; // Send shutter to back
                 
                 btn.classList.add('active');
                 updateStatusUI('scanning');
@@ -374,6 +376,7 @@
         const sceneEl = document.querySelector('a-scene');
         const btn = document.getElementById('cam-toggle');
         const camIcon = document.getElementById('cam-icon');
+        const shutter = document.getElementById('shutter');
         
         if(sceneEl.systems['mindar-image-system']) {
             sceneEl.systems['mindar-image-system'].stop();
@@ -382,9 +385,14 @@
         btn.classList.remove('active');
         updateStatusUI('standby');
         camIcon.setAttribute('fill', '#999');
-        document.body.style.backgroundColor = "#fff";
-        document.getElementById('shutter').style.zIndex = '2500';
-        document.getElementById('shutter').style.opacity = '1';
+        
+        // Reset background to white
+        document.body.style.backgroundColor = "#ffffff";
+        
+        // Show the shutter but keep it BELOW the UI layer
+        // ui-layer has z-index: 100, so we use 10 for the shutter
+        shutter.style.zIndex = '10'; 
+        shutter.style.opacity = '1';
     }
 
     function goBackToHome() {
