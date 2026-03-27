@@ -22,6 +22,7 @@
         
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: #ffffff; font-family: 'Segoe UI', sans-serif; color: var(--text-main); }
 
+        /* CRITICAL: Keep camera feed behind UI */
         video { 
             position: fixed !important; 
             top: 0 !important; left: 0 !important; 
@@ -51,41 +52,19 @@
         }
 
         .hero-container { position: relative; width: 100%; height: 60%; overflow: hidden; background: #eee; }
-        
-        .hero-scroll-wrapper {
-            display: flex; width: 100%; height: 100%;
-            overflow-x: auto; scroll-snap-type: x mandatory;
-            scrollbar-width: none;
-        }
+        .hero-scroll-wrapper { display: flex; width: 100%; height: 100%; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; }
         .hero-scroll-wrapper::-webkit-scrollbar { display: none; }
-
         .hero-slide { min-width: 100%; height: 100%; position: relative; scroll-snap-align: start; }
         .hero-img { width: 100%; height: 100%; background-size: cover; background-position: center; }
 
-        .hero-info-overlay {
-            position: absolute; bottom: 60px; left: 25px; right: 25px;
-            text-align: left; color: white; z-index: 5;
-        }
+        .hero-info-overlay { position: absolute; bottom: 60px; left: 25px; right: 25px; text-align: left; color: white; z-index: 5; }
         .hero-info-overlay h2 { margin: 8px 0; font-size: 24px; font-weight: 800; text-shadow: 0 2px 10px rgba(0,0,0,0.3); }
         .hero-info-overlay p { margin: 0; font-size: 14px; opacity: 0.9; text-shadow: 0 2px 5px rgba(0,0,0,0.3); }
         
-        .badge {
-            background: var(--accent); color: white;
-            padding: 4px 10px; border-radius: 6px;
-            font-size: 10px; font-weight: 800; text-transform: uppercase;
-        }
+        .badge { background: var(--accent); color: white; padding: 4px 10px; border-radius: 6px; font-size: 10px; font-weight: 800; text-transform: uppercase; }
+        .hero-brush { position: absolute; bottom: -2px; left: 0; width: 100%; height: 100px; background: white; z-index: 2; -webkit-mask-image: linear-gradient(to bottom, transparent, black 70%); mask-image: linear-gradient(to bottom, transparent, black 70%); }
 
-        .hero-brush {
-            position: absolute; bottom: -2px; left: 0; width: 100%; height: 100px;
-            background: white; z-index: 2;
-            -webkit-mask-image: linear-gradient(to bottom, transparent, black 70%);
-            mask-image: linear-gradient(to bottom, transparent, black 70%);
-        }
-
-        .scroll-dots {
-            position: absolute; bottom: 25px; width: 100%;
-            display: flex; justify-content: center; gap: 8px; z-index: 10;
-        }
+        .scroll-dots { position: absolute; bottom: 25px; width: 100%; display: flex; justify-content: center; gap: 8px; z-index: 10; }
         .dot { width: 6px; height: 6px; background: rgba(0,0,0,0.15); border-radius: 50%; transition: 0.3s; }
         .dot.active { width: 20px; background: var(--accent); border-radius: 10px; }
 
@@ -101,11 +80,7 @@
             cursor: pointer; position: relative; padding-right: 45px;
             margin-bottom: 10px;
         }
-        .btn-arrow-circle {
-            position: absolute; right: 8px; width: 44px; height: 44px;
-            background: white; border-radius: 50%;
-            display: flex; align-items: center; justify-content: center;
-        }
+        .btn-arrow-circle { position: absolute; right: 8px; width: 44px; height: 44px; background: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
         .btn-arrow-circle svg { fill: var(--accent); width: 20px; }
 
         /* --- UI LAYER --- */
@@ -128,39 +103,16 @@
             box-shadow: 0 -5px 20px rgba(0,0,0,0.1);
         }
         .bottom-dock.expanded { transform: translateY(0); }
-        
-        .drag-handle { 
-            width: 100%; height: 60px; display: flex; 
-            justify-content: center; align-items: center; 
-            cursor: pointer; pointer-events: auto; 
-        }
+        .drag-handle { width: 100%; height: 60px; display: flex; justify-content: center; align-items: center; cursor: pointer; pointer-events: auto; }
         .handle-bar { width: 40px; height: 4px; background: #ddd; border-radius: 10px; }
         
-        .scroll-container { 
-            display: flex; gap: 12px; overflow-x: auto; 
-            padding: 0 20px 40px 20px; width: 100%; 
-            pointer-events: auto; 
-            scroll-behavior: smooth;
-        }
+        .scroll-container { display: flex; gap: 12px; overflow-x: auto; padding: 0 20px 40px 20px; width: 100%; pointer-events: auto; scroll-behavior: smooth; scrollbar-width: none;}
+        .scroll-container::-webkit-scrollbar { display: none; }
         
-        .station-card { 
-            min-width: 120px; height: 150px; background: #fff; 
-            border-radius: 18px; overflow: hidden; border: 1px solid #eee; 
-            flex-shrink: 0; transition: 0.3s;
-        }
-        .station-card.found-glow { 
-            border: 2px solid var(--accent);
-            box-shadow: 0 0 15px var(--accent);
-            transform: scale(1.05);
-        }
+        .station-card { min-width: 120px; height: 150px; background: #fff; border-radius: 18px; overflow: hidden; border: 1px solid #eee; flex-shrink: 0; transition: 0.3s; }
+        .station-card.found-glow { border: 2px solid var(--accent); box-shadow: 0 0 15px var(--accent); transform: scale(1.05); }
 
-        .nav-bar { 
-            position: fixed; 
-            bottom: 30px; 
-            left: 0; right: 0; 
-            display: flex; justify-content: center; align-items: center; gap: 20px; 
-            z-index: 150; 
-        }
+        .nav-bar { position: fixed; bottom: 30px; left: 0; right: 0; display: flex; justify-content: center; align-items: center; gap: 20px; z-index: 150; }
         .icon-btn { width: 55px; height: 55px; border-radius: 50%; background: white; border: 1px solid #eee; display: flex; align-items: center; justify-content: center; cursor: pointer; pointer-events: auto; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
         .cam-btn { width: 70px; height: 70px; border-radius: 50%; background: #ffffff; border: 4px solid #eee; display: flex; align-items: center; justify-content: center; cursor: pointer; pointer-events: auto; }
         .cam-btn.active { border-color: var(--accent); background: var(--accent); }
@@ -242,15 +194,15 @@
         <div class="nav-bar">
             <div class="icon-btn"><svg viewBox="0 0 24 24" width="22" fill="#666"><path d="M21 6h-2v9H6v2c0 .55.45 1 1 1h11l4 4V7c0-.55-.45-1-1-1zm-4 6V3c0-.55-.45-1-1-1H3c-.55 0-1 .45-1 1v14l4-4h10c.55 0 1-.45 1-1z"/></svg></div>
             <div class="cam-btn active" id="cam-toggle" onclick="toggleScanner()"><svg viewBox="0 0 24 24" width="32" fill="#fff" id="cam-icon"><path d="M12 9c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.66 3-3-1.34-3-3-3zm7-4h-2.69l-1.83-2H9.52l-1.83 2H5c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm-7 15c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5z"/></svg></div>
-            <div class="icon-btn" onclick="switchCamera()">
-                <svg viewBox="0 0 24 24" width="24" fill="#666"><path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z"/></svg>
+            <div class="icon-btn" onclick="location.reload()">
+                <svg viewBox="0 0 24 24" width="24" fill="#666"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
             </div>
         </div>
     </div>
 
     <div id="shutter"></div>
 
-    <a-scene id="ar-scene" mindar-image="imageTargetSrc: targets.mind; autoStart: false; uiLoading: no; uiScanning: no; filterMinCF:0.0001; filterBeta: 0.001;" embedded renderer="transparent: true; alpha: true;" vr-mode-ui="enabled: false">
+    <a-scene id="ar-scene" mindar-image="imageTargetSrc: targets.mind; autoStart: false; uiLoading: no; uiScanning: no;" embedded renderer="transparent: true; alpha: true;" vr-mode-ui="enabled: false">
         <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
         <a-entity id="target-container"></a-entity>
     </a-scene>
@@ -261,9 +213,7 @@
         { name: "Main Entrance", thumb: "Assets/A2_Main Entrance.png", link: "https://jmflorencio.github.io/BagView_Botanical_Map/" },
         { name: "Arbor", thumb: "Assets/Arbor.png", link: "https://tour.panoee.net/69b7b676cd5918466513b640" },
         { name: "Cactus & Succulents", thumb: "Assets/Cactus&Succulents.png", link: "https://tour.panoee.net/69b7b991cd59184ead13b71f" },
-        { name: "Centennial Garden", thumb: "Assets/Centennial Garden.png", link: "https://tour.panoee.net/69b7b991cd59184ead13b71f" },
         { name: "Chinese Garden", thumb: "Assets/Chinese Garden.png", link: "https://tour.panoee.net/69b74a8ccd5918bff013a943" },
-        { name: "Dahlia Garden", thumb: "Assets/Dahlia Garden.png", link: "https://tour.panoee.net/69b74a8ccd5918bff013a943" },
         { name: "Friendship Garden", thumb: "Assets/City of Vaughan Friendship Garden.png", link: "https://tour.panoee.net/69b7b820a3e4d78d0cc8db9e" },
         { name: "Cordillera Village", thumb: "Assets/Cordillera Village.png", link: "https://tour.panoee.net/69b7b964a3e4d75529c8dc1a" },
         { name: "Greenhouse", thumb: "Assets/Greenhouse.png", link: "https://tour.panoee.net/69b7b91fa3e4d7ebe6c8dbfe" },
@@ -271,7 +221,6 @@
         { name: "Japanese Tunnel", thumb: "Assets/Japanese Tunnel.png", link: "https://tour.panoee.net/69b7b616a3e4d72922c8db49" },
         { name: "Korea Garden", thumb: "Assets/Korea Garden.png", link: "https://tour.panoee.net/koreagarden/1" },
         { name: "Orchidarium", thumb: "Assets/Orchidarium.png", link: "https://tour.panoee.net/orchidarium/1" },
-        { name: "Philippine-Thailand Friendship Garden", thumb: "Assets/Philippine-Thailand Frienship Garden.png", link: "https://tour.panoee.net/69b184dfa0e1d16f1a9e388d/69b187aba0e1d18afb9e38fb" },
         { name: "PMSEA Garden", thumb: "Assets/PMSEA Garden.png", link: "https://tour.panoee.net/69b7b586a3e4d741fdc8db26" }
     ];
 
@@ -279,7 +228,6 @@
     const hud = document.getElementById('gallery-hud');
     const trigger = document.getElementById('dock-trigger');
 
-    // Initial load: Hide shutter once page is ready
     window.addEventListener('load', () => {
         setTimeout(() => { shutter.style.opacity = '0'; }, 500);
     });
@@ -315,9 +263,31 @@
     function initARAnchors() {
         const container = document.getElementById('target-container');
         container.innerHTML = ''; 
-        stations.forEach((_, index) => {
+        stations.forEach((s, index) => {
             const entity = document.createElement('a-entity');
             entity.setAttribute('mindar-image-target', `targetIndex: ${index}`);
+            
+            entity.addEventListener("targetFound", () => {
+                updateStatusUI('match');
+                document.getElementById('match-sound').play();
+                hud.classList.add('expanded');
+                
+                const card = document.getElementById(`card-${index}`);
+                if(card) {
+                    card.classList.add('found-glow');
+                    card.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+                    setTimeout(() => {
+                        window.open(s.link, '_blank');
+                    }, 1500);
+                }
+            });
+
+            entity.addEventListener("targetLost", () => {
+                updateStatusUI('scanning');
+                const card = document.getElementById(`card-${index}`);
+                if(card) card.classList.remove('found-glow');
+            });
+
             container.appendChild(entity);
         });
     }
@@ -325,48 +295,32 @@
     async function startAR() {
         const sceneEl = document.querySelector('a-scene');
         const system = sceneEl.systems['mindar-image-system'];
-        
         shutter.style.opacity = '1';
         try {
             await system.start();
             document.body.style.backgroundColor = "transparent";
             updateStatusUI('scanning');
-        } catch (e) {
-            console.error("AR Start Failed", e);
-        }
+        } catch (e) { console.error(e); }
         shutter.style.opacity = '0';
-
-        sceneEl.addEventListener("targetFound", (e) => {
-            const idx = e.detail.index;
-            updateStatusUI('match');
-            document.getElementById('match-sound').play();
-            
-            const card = document.getElementById(`card-${idx}`);
-            if(card) {
-                card.classList.add('found-glow');
-                card.scrollIntoView({ behavior: 'smooth', inline: 'center' });
-            }
-
-            setTimeout(() => {
-                window.open(stations[idx].link, '_blank');
-                setTimeout(() => card.classList.remove('found-glow'), 3000);
-            }, 1500);
-        });
-
-        sceneEl.addEventListener("targetLost", () => updateStatusUI('scanning'));
     }
 
     function toggleScanner() {
         const btn = document.getElementById('cam-toggle');
-        const system = document.querySelector('a-scene').systems['mindar-image-system'];
+        const sceneEl = document.querySelector('a-scene');
+        const system = sceneEl.systems['mindar-image-system'];
+        
         if(btn.classList.contains('active')) {
             system.stop();
             btn.classList.remove('active');
             updateStatusUI('standby');
+            document.body.style.backgroundColor = "#ffffff";
+            shutter.style.opacity = '1';
         } else {
             system.start();
             btn.classList.add('active');
             updateStatusUI('scanning');
+            document.body.style.backgroundColor = "transparent";
+            shutter.style.opacity = '0';
         }
     }
 
@@ -376,12 +330,10 @@
         pulse.className = 'pulse';
         if (type === 'scanning') { pulse.classList.add('live'); text.innerText = "SCANNING..."; }
         else if (type === 'match') { pulse.classList.add('match'); text.innerText = "MATCH FOUND!"; }
-        else { text.innerText = "OFFLINE"; }
+        else { text.innerText = "CAMERA OFF"; }
     }
 
-    function goBackToHome() {
-        location.reload(); // Simplest way to reset AR state
-    }
+    function goBackToHome() { location.reload(); }
 </script>
 </body>
 </html>
